@@ -18,7 +18,7 @@ app.post('/info', (req, res) => {
     if (!url) return res.status(400).send("URL එකක් ලබා දී නැත.");
 
     // yt-dlp.exe හරහා වීඩියෝවේ තොරතුරු JSON විදිහට ගැනීම
-    const command = `.\\yt-dlp.exe --dump-json "${url}"`;
+    const command = `.\\yt-dlp --dump-json "${url}"`;
     
     exec(command, (error, stdout, stderr) => {
         if (error) {
