@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="si">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Downloader & Trimmer by PehasaraAI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            flex-direction: column;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 550px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #444;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        /* YouTube Player Container */
+        #player-container {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Dual Range Slider + Playhead Styles */
+        .range-slider {
+            position: relative;
+            width: 100%;
+            height: 40px;
+            margin-top: 10px;
+        }
+
+        .range-slider input[type="range"] {
+            position: absolute;
+            width: 100%;
+            pointer-events: none;
+            -webkit-appearance: none;
+            z-index: 2;
+            height: 5px;
+            top: 10px;
+            background: transparent;
+        }
+
+        .range-slider input[type="range"]::-webkit-slider-thumb {
+            pointer-events: all;
+            width: 18px;
+            height: 18px;
+            background: #ff0000;
+            border-radius: 50%;
+            -webkit-appearance: none;
+            cursor: ew-resize;
+        }
+
+        /* නිල් පාට Playhead (Seek) Point එක සඳහා Style */
+        #sliderPlayhead {
+            z-index: 3 !important;
+        }
+
+        #sliderPlayhead::-webkit-slider-thumb {
+            background: #007bff !important;
+            width: 22px !important;
+            height: 22px !important;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border: 2px solid white;
+        }
+
+        .track {
+            position: absolute;
+            width: 100%;
+            height: 5px;
+            background: #ddd;
+            top: 10px;
+            border-radius: 5px;
+            z-index: 1;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .time-inputs input {
+            text-align: center;
+            font-family: monospace;
+            font-size: 15px;
+        }
+
+        .play-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            transition: 0.3s;
+        }
+
+        .play-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .btn:disabled {
+            background-color: #ff8888;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            word-wrap: break-word;
+        }
+
+        #videoTitle {
+            font-size: 13px;
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        #currentTimeDisplay {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #444;
+            background: #fafafa;
+            border-radius: 5px;
+            padding: 5px;
+            border: 1px solid #ddd;
+        }
+
+        /* Responsive Mobile Layout */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            .time-inputs {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .play-btn {
+                align-self: center;
+                margin-bottom: 5px;
+            }
+
+            input[type="text"],
+            select,
+            .btn {
+                font-size: 14px;
+                padding: 12px;
+            }
+        }
+    </style>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- link එකක් හරහා favicon එකක් දාන්න පුළුවන් විදිහට -->
+    <link rel="icon" type="image/x-icon" href="\favicon.png">
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>YT Downloader by PehasaraAI</h2>
+
+        <div class="form-group">
+            <label for="url">YouTube Video Link එක:</label>
+            <input type="text" id="url" placeholder="Link එක Paste කරන්න..." onchange="fetchVideoInfo()">
+        </div>
+
+        <div id="player-container">
+            <div id="ytplayer"></div>
+        </div>
+
+        <div id="videoTitle"></div>
+
+        <div class="form-group" id="trimmer-section" style="opacity: 0.5; pointer-events: none;">
+            <label>වීඩියෝව කපා වෙන් කරන්න (Trim) සහ Play කරන්න:</label>
+
+            <div class="range-slider">
+                <div class="track"></div>
+                <input type="range" id="sliderStart" min="0" max="100" value="0" oninput="updateFromSliders('start')">
+                <input type="range" id="sliderEnd" min="0" max="100" value="100" oninput="updateFromSliders('end')">
+                <input type="range" id="sliderPlayhead" min="0" max="100" value="0" oninput="seekVideo()">
+            </div>
+
+            <div id="currentTimeDisplay">00:00:00 / 00:00:00</div>
+
+            <div class="time-inputs">
+                <button class="play-btn" id="playBtn" onclick="togglePlay()" title="Play/Pause">▶</button>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; color: #666;">Start Time:</label>
+                    <input type="text" id="textStart" value="00:00:00" onchange="updateFromInputs()">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; color: #666;">End Time:</label>
+                    <input type="text" id="textEnd" value="00:00:00" onchange="updateFromInputs()">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="format">Quality & Format එක තෝරන්න:</label>
+            <select id="format">
+                <optgroup label="Video (MP4)">
+                    <option value="mp4_1080">1080p - High Quality</option>
+                    <option value="mp4_720">720p - HD Quality</option>
+                    <option value="mp4_480">480p - Standard</option>
+                    <option value="mp4_360">360p - Low Quality</option>
+                </optgroup>
+                <optgroup label="Audio (MP3)">
+                    <option value="mp3_320">320 kbps - Best Audio</option>
+                    <option value="mp3_192">192 kbps - Standard Audio</option>
+                    <option value="mp3_128">128 kbps - Low Audio</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="fileName">File Name එක (අවශ්‍ය නම් වෙනස් කරන්න):</label>
+            <input type="text" id="fileName" placeholder="File name...">
+        </div>
+
+        <button class="btn" id="downloadBtn" onclick="processVideo()">Download කරන්න</button>
+        <div id="status"></div>
+    </div>
+
+    <div class="footer">
+        Developed by PehasaraAI Software Solutions
+    </div>
+
+    <script>
+        let videoDuration = 0;
+        let ytPlayer;
+        let isPlaying = false;
+        let playTimer;
+
+        // YouTube Video ID එක Link එකෙන් වෙන් කරගැනීම
+        function extractVideoID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        // තත්පර ගණන HH:MM:SS බවට පත් කිරීම
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        // HH:MM:SS අගය තත්පර බවට පත් කිරීම
+        function parseTime(timeStr) {
+            const parts = timeStr.split(':');
+            return (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2]);
+        }
+
+        function fetchVideoInfo() {
+            const url = document.getElementById('url').value;
+            const statusDiv = document.getElementById('status');
+            const trimmer = document.getElementById('trimmer-section');
+            const titleDiv = document.getElementById('videoTitle');
+            const playerContainer = document.getElementById('player-container');
+            const videoId = extractVideoID(url);
+
+            if (!videoId) {
+                statusDiv.style.color = 'red';
+                statusDiv.innerText = "නිවැරදි YouTube ලින්ක් එකක් නොවේ!";
+                return;
+            }
+
+            statusDiv.style.color = '#007bff';
+            statusDiv.innerText = "වීඩියෝවේ තොරතුරු ලබාගනිමින් පවතී...";
+
+            // YouTube Player එක Load කිරීම
+            playerContainer.style.display = 'block';
+            if (ytPlayer) {
+                ytPlayer.loadVideoById(videoId);
+            } else {
+                ytPlayer = new YT.Player('ytplayer', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoId,
+                    playerVars: { 'controls': 0, 'disablekb': 1, 'rel': 0 },
+                    events: {
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+
+            // Backend එකෙන් වෙලාව ලබාගැනීම
+            fetch('http://localhost:3000/info', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    videoDuration = data.duration;
+                    titleDiv.innerText = data.title || "Video Ready!";
+                    if (data.title) {
+                        const cleanTitle = data.title.replace(/[<>:"/\\|?*]+/g, '');
+                        document.getElementById('fileName').value = `(${cleanTitle} by PehasaraAI)`;
+                    }
+                    statusDiv.innerText = "";
+
+                    trimmer.style.opacity = "1";
+                    trimmer.style.pointerEvents = "all";
+
+                    ['sliderStart', 'sliderEnd', 'sliderPlayhead'].forEach(id => {
+                        document.getElementById(id).max = videoDuration;
+                    });
+
+                    document.getElementById('sliderEnd').value = videoDuration;
+                    updateFromSliders('none');
+                })
+                .catch(err => {
+                    statusDiv.style.color = 'red';
+                    statusDiv.innerText = "තොරතුරු ලබාගැනීම අසාර්ථකයි! Backend Server එක On ද?";
+                });
+        }
+
+        function updateFromSliders(source) {
+            let startVal = parseInt(document.getElementById('sliderStart').value);
+            let endVal = parseInt(document.getElementById('sliderEnd').value);
+
+            if (startVal >= endVal) {
+                if (source === 'start') {
+                    document.getElementById('sliderStart').value = endVal - 1;
+                    startVal = endVal - 1;
+                } else {
+                    document.getElementById('sliderEnd').value = startVal + 1;
+                    endVal = startVal + 1;
+                }
+            }
+
+            document.getElementById('textStart').value = formatTime(startVal);
+            document.getElementById('textEnd').value = formatTime(endVal);
+
+            // Start එක වෙනස් කළොත් Playhead එකත් එතනට ගෙනියන්න
+            if (source === 'start') {
+                document.getElementById('sliderPlayhead').value = startVal;
+                if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(startVal, true);
+            }
+        }
+
+        function updateFromInputs() {
+            let startVal = parseTime(document.getElementById('textStart').value);
+            let endVal = parseTime(document.getElementById('textEnd').value);
+
+            if (startVal < 0) startVal = 0;
+            if (endVal > videoDuration) endVal = videoDuration;
+
+            document.getElementById('sliderStart').value = startVal;
+            document.getElementById('sliderEnd').value = endVal;
+            document.getElementById('sliderPlayhead').value = startVal;
+
+            updateFromSliders('none');
+            if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(startVal, true);
+        }
+
+        // නිල් පාට බෝලයෙන් (Playhead) seek කිරීම
+        function seekVideo() {
+            let seekTime = parseInt(document.getElementById('sliderPlayhead').value);
+            let startVal = parseInt(document.getElementById('sliderStart').value);
+            let endVal = parseInt(document.getElementById('sliderEnd').value);
+
+            // Trim කරපු සීමාවෙන් පිටතට Seek කරන්න බැරි විදිහට හැදීම
+            if (seekTime < startVal) seekTime = startVal;
+            if (seekTime > endVal) seekTime = endVal;
+
+            document.getElementById('sliderPlayhead').value = seekTime;
+            if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(seekTime, true);
+        }
+
+        // Play / Pause Button Logic
+        function togglePlay() {
+            if (!ytPlayer || !ytPlayer.getPlayerState) return;
+
+            const state = ytPlayer.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                ytPlayer.pauseVideo();
+            } else {
+                let startVal = parseInt(document.getElementById('sliderStart').value);
+                let currentPos = ytPlayer.getCurrentTime();
+
+                // Play කරද්දි අගය Trim End එකට වඩා වැඩිනම් Start එකෙන් පටන් ගන්නවා
+                if (currentPos >= parseInt(document.getElementById('sliderEnd').value)) {
+                    ytPlayer.seekTo(startVal, true);
+                }
+                ytPlayer.playVideo();
+            }
+        }
+
+        // YouTube Player State වෙනස් වන විට
+        function onPlayerStateChange(event) {
+            const playBtn = document.getElementById('playBtn');
+            if (event.data === YT.PlayerState.PLAYING) {
+                playBtn.innerText = "⏸"; // Pause Icon
+                playTimer = setInterval(trackPlayback, 500);
+            } else {
+                playBtn.innerText = "▶"; // Play Icon
+                clearInterval(playTimer);
+            }
+        }
+
+        // වීඩියෝ එක ප්ලේ වෙද්දී නිල් පාට බෝලය (Playhead) ඉබේ ගමන් කිරීම
+        function trackPlayback() {
+            if (!ytPlayer || !ytPlayer.getCurrentTime) return;
+
+            let currentTime = ytPlayer.getCurrentTime();
+            let endVal = parseInt(document.getElementById('sliderEnd').value);
+
+            document.getElementById('sliderPlayhead').value = currentTime;
+            document.getElementById('currentTimeDisplay').innerText = `${formatTime(currentTime)} / ${formatTime(videoDuration)}`;
+
+            // Trim කරපු End Time එකට ආවම Play වෙන එක නවත්වනවා
+            if (currentTime >= endVal) {
+                ytPlayer.pauseVideo();
+                ytPlayer.seekTo(parseInt(document.getElementById('sliderStart').value), true);
+                document.getElementById('sliderPlayhead').value = document.getElementById('sliderStart').value;
+                document.getElementById('currentTimeDisplay').innerText = `${formatTime(document.getElementById('sliderStart').value)} / ${formatTime(videoDuration)}`;
+            }
+        }
+
+        // Download ක්‍රියාවලිය
+        async function processVideo() {
+            const url = document.getElementById('url').value;
+            const start = document.getElementById('textStart').value;
+            const end = document.getElementById('textEnd').value;
+            const format = document.getElementById('format').value;
+            let fileName = document.getElementById('fileName').value;
+            const statusDiv = document.getElementById('status');
+            const btn = document.getElementById('downloadBtn');
+
+            if (!url) return;
+
+            // Download කරද්දී Player එක Pause කිරීම
+            if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+
+            const isAudio = format.startsWith('mp3');
+            const extension = isAudio ? '.mp3' : '.mp4';
+            if (!fileName) {
+                fileName = 'media';
+            }
+            let fullFileName = fileName.endsWith(extension) ? fileName : fileName + extension;
+
+            let fileHandle;
+            // File System Access API මගින් Save Location පෙන්වීම (මොබයිල් වලට සපෝට් නොකරන නිසා ට්‍රයි කැච් කර අල්ලගන්නවා)
+            try {
+                if (window.showSaveFilePicker) {
+                    fileHandle = await window.showSaveFilePicker({
+                        suggestedName: fullFileName,
+                        types: [{
+                            description: isAudio ? 'Audio File' : 'Video File',
+                            accept: isAudio ? { 'audio/mp3': ['.mp3'] } : { 'video/mp4': ['.mp4'] },
+                        }],
+                    });
+                }
+            } catch (error) {
+                // User cancel කළොත් හෝ error එකක් ආවොත් (අවලංගු කලොත් වැඩසටහන නවත්වනවා)
+                if (error.name === 'AbortError') return;
+                console.warn("File Picker Error:", error);
+            }
+
+            statusDiv.style.color = '#007bff';
+            statusDiv.innerText = "වීඩියෝව සකසමින් පවතී... (මෙයට මිනිත්තු කිහිපයක් ගතවිය හැක)";
+            btn.disabled = true;
+
+            fetch('http://localhost:3000/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, start, end, format, fileName: fullFileName })
+            })
+                .then(async res => {
+                    if (!res.ok) throw new Error("Error!");
+
+                    const blob = await res.blob();
+
+                    if (fileHandle) {
+                        // Save To File System Api (Desktop)
+                        const writableStream = await fileHandle.createWritable();
+                        await writableStream.write(blob);
+                        await writableStream.close();
+                    } else {
+                        // Fallback Download (Mobile / Unsupported Browsers)
+                        const downloadUrl = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = fullFileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+                    }
+
+                    statusDiv.style.color = 'green';
+                    statusDiv.innerText = "Download එක සාර්ථකයි!";
+                    btn.disabled = false;
+                })
+                .catch(err => {
+                    statusDiv.style.color = 'red';
+                    statusDiv.innerText = "දෝෂයක් මතු විය! Terminal එක පරීක්ෂා කරන්න.";
+                    btn.disabled = false;
+                });
+        }
+    </script>
+</body>
+
+</html>
