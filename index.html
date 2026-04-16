@@ -314,6 +314,9 @@
         let isPlaying = false;
         let playTimer;
 
+        // API URL එක තීරණය කිරීම (Local file එකක් ලෙස open කළහොත් localhost පාවිච්චි කරයි)
+        const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+
         // YouTube Video ID එක Link එකෙන් වෙන් කරගැනීම
         function extractVideoID(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -369,7 +372,7 @@
             }
 
             // Backend එකෙන් වෙලාව ලබාගැනීම
-            fetch('http://localhost:3000/info', {
+            fetch(`${API_BASE_URL}/info`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url })
@@ -547,7 +550,7 @@
             statusDiv.innerText = "වීඩියෝව සකසමින් පවතී... (මෙයට මිනිත්තු කිහිපයක් ගතවිය හැක)";
             btn.disabled = true;
 
-            fetch('http://localhost:3000/download', {
+            fetch(`${API_BASE_URL}/download`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url, start, end, format, fileName: fullFileName })
