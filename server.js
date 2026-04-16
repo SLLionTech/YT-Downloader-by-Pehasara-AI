@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -18,7 +18,9 @@ app.post('/info', (req, res) => {
     if (!url) return res.status(400).send("URL එකක් ලබා දී නැත.");
 
     // yt-dlp.exe හරහා වීඩියෝවේ තොරතුරු JSON විදිහට ගැනීම
-    const command = `.\\yt-dlp --dump-json "${url}"`;
+    // Windows නම් .\\yt-dlp.exe ද, නැතිනම් (Linux) yt-dlp ද පාවිච්චි කිරීම
+    const ytDlpPath = process.platform === 'win32' ? '.\\yt-dlp.exe' : 'yt-dlp';
+    const command = `${ytDlpPath} --dump-json "${url}"`;
     
     exec(command, (error, stdout, stderr) => {
         if (error) {
@@ -84,8 +86,8 @@ app.post('/download', (req, res) => {
         trimOption = `--download-sections "*${start}-${end}"`;
     }
 
-    // මෙහිද yt-dlp.exe ලෙස වෙනස් කර ඇත
-    const command = `.\\yt-dlp.exe ${formatOption} ${trimOption} -o "${outputPath}" "${url}"`;
+    const ytDlpPath = process.platform === 'win32' ? '.\\yt-dlp.exe' : 'yt-dlp';
+    const command = `${ytDlpPath} ${formatOption} ${trimOption} -o "${outputPath}" "${url}"`;
     console.log("ක්‍රියාත්මක වන Command එක: ", command);
 
     exec(command, (error, stdout, stderr) => {
