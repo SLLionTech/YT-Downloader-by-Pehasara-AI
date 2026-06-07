@@ -2,7 +2,7 @@
 FROM node:18
 
 # FFmpeg සහ Python (yt-dlp සඳහා අවශ්‍යයි) install කිරීම
-RUN apt-get update && apt-get install -y ffmpeg python3 python3-pip
+RUN apt-get update && apt-get install -y ffmpeg python3 python3-pip python-is-python3
 
 # yt-dlp බාගත කිරීම
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp

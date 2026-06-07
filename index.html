@@ -475,9 +475,48 @@
             }
         }
 
+        // YouTube Player එකෙන් සෘජුවම Video Metadata ලබාගෙන UI එක සකස් කිරීම (Client-side Fallback)
+        function initializeVideoMetadataFromPlayer() {
+            if (!ytPlayer || !ytPlayer.getDuration || !ytPlayer.getVideoData) return;
+            const duration = ytPlayer.getDuration();
+            if (duration > 0 && (videoDuration === 0 || videoDuration !== duration)) {
+                videoDuration = duration;
+                
+                const titleDiv = document.getElementById('videoTitle');
+                const videoData = ytPlayer.getVideoData();
+                const title = videoData ? videoData.title : "";
+                
+                if (title) {
+                    titleDiv.innerText = title;
+                    const cleanTitle = title.replace(/[<>:"/\\|?*]+/g, '');
+                    document.getElementById('fileName').value = `(${cleanTitle} by PehasaraAI)`;
+                } else if (!titleDiv.innerText) {
+                    titleDiv.innerText = "Video Ready!";
+                }
+
+                const trimmer = document.getElementById('trimmer-section');
+                trimmer.style.opacity = "1";
+                trimmer.style.pointerEvents = "all";
+
+                ['sliderStart', 'sliderEnd', 'sliderPlayhead'].forEach(id => {
+                    document.getElementById(id).max = videoDuration;
+                });
+
+                document.getElementById('sliderEnd').value = videoDuration;
+                updateFromSliders('none');
+                
+                // Error status එකක් තිබේ නම් එය ඉවත් කිරීම
+                const statusDiv = document.getElementById('status');
+                if (statusDiv.innerText.includes("තොරතුරු ලබාගැනීම අසාර්ථකයි") || statusDiv.innerText.includes("තොරතුරු ලබාගනිමින් පවතී")) {
+                    statusDiv.innerText = "";
+                }
+            }
+        }
+
         // YouTube Player State වෙනස් වන විට
         function onPlayerStateChange(event) {
             const playBtn = document.getElementById('playBtn');
+            initializeVideoMetadataFromPlayer();
             if (event.data === YT.PlayerState.PLAYING) {
                 playBtn.innerText = "⏸"; // Pause Icon
                 playTimer = setInterval(trackPlayback, 500);
@@ -490,6 +529,8 @@
         // වීඩියෝ එක ප්ලේ වෙද්දී නිල් පාට බෝලය (Playhead) ඉබේ ගමන් කිරීම
         function trackPlayback() {
             if (!ytPlayer || !ytPlayer.getCurrentTime) return;
+
+            initializeVideoMetadataFromPlayer();
 
             let currentTime = ytPlayer.getCurrentTime();
             let endVal = parseInt(document.getElementById('sliderEnd').value);

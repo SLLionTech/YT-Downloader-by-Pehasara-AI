@@ -23,7 +23,7 @@ app.get('/debug', (req, res) => {
     const testUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
     const command = `"${ytDlpPath}" --no-warnings --dump-json "${testUrl}"`;
 
-    exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
+    exec(command, { timeout: 60000 }, (error, stdout, stderr) => {
         res.json({
             platform: process.platform,
             ytDlpPath,
@@ -44,7 +44,7 @@ app.post('/info', (req, res) => {
     const command = `"${ytDlpPath}" ${YT_FLAGS} --dump-json "${url}"`;
     console.log("Info Command:", command);
 
-    exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
+    exec(command, { timeout: 60000 }, (error, stdout, stderr) => {
         if (error) {
             console.error("yt-dlp error:", stderr || error.message);
             return res.status(500).json({ error: "යූ-ටියුබ් වලින් තොරතුරු ලබාගැනීමට නොහැකි විය.", detail: stderr });
